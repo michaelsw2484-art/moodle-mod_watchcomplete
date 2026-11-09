@@ -1,0 +1,68 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+    GNU GPL v3 or later. See <http://www.gnu.org/licenses/>.
+
+    @template mod_watchcomplete/player
+
+    Student player layout.
+
+    Example context:
+    {
+        "cmid": 12,
+        "ismp4": true,
+        "isembed": false,
+        "url": "https://example.com/video.mp4",
+        "videoid": "",
+        "percent": 40,
+        "completed": false,
+        "completedmessage": "Completed",
+        "trackingdisabled": false,
+        "showresume": false,
+        "resumeprompt": "",
+        "resumebutton": "Resume",
+        "restartbutton": "Start again",
+        "canreport": true,
+        "reporturl": "https://example.com/mod/watchcomplete/report.php?id=12"
+    }
+}}
+<div id="watchcomplete-player" class="watchcomplete-player" data-cmid="{{cmid}}">
+    {{#trackingdisabled}}
+    <div class="alert alert-info">{{#str}} previewnotrack, mod_watchcomplete {{/str}}</div>
+    {{/trackingdisabled}}
+
+    {{#showresume}}
+    <div id="wc-resume" class="alert alert-info wc-resume">
+        <p class="mb-2">{{resumeprompt}}</p>
+        <button type="button" id="wc-resume-btn" class="btn btn-primary">{{resumebutton}}</button>
+        <button type="button" id="wc-restart-btn" class="btn btn-secondary">{{restartbutton}}</button>
+    </div>
+    {{/showresume}}
+
+    <div class="wc-media">
+        {{#ismp4}}
+        <video id="wc-video" class="wc-video" controls preload="metadata" playsinline src="{{url}}"
+               aria-describedby="wc-status-text"></video>
+        {{/ismp4}}
+        {{#isembed}}
+        <div id="wc-video" class="wc-video" role="region" aria-label="{{#str}} videolabel, mod_watchcomplete {{/str}}"
+             aria-describedby="wc-status-text"></div>
+        {{/isembed}}
+    </div>
+
+    <div class="wc-summary">
+        <div class="wc-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+             aria-valuenow="{{percent}}" aria-labelledby="wc-status-text">
+            <div id="wc-progress-bar" class="wc-progress-bar" aria-hidden="true"></div>
+        </div>
+        <p id="wc-status-text" class="wc-status" aria-live="polite">
+            <span id="wc-percent">{{percent}}</span>{{#str}} percentwatched, mod_watchcomplete {{/str}}
+        </p>
+        <p id="wc-notice" class="visually-hidden" aria-live="assertive"></p>
+        <div id="wc-complete" class="alert alert-success wc-complete" role="status"{{^completed}} hidden{{/completed}}>
+            {{completedmessage}}
+        </div>
+        {{#canreport}}
+        <a class="btn btn-secondary" href="{{reporturl}}">{{#str}} viewreports, mod_watchcomplete {{/str}}</a>
+        {{/canreport}}
+    </div>
+</div>
