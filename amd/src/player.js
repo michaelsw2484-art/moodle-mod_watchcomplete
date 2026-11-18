@@ -18,10 +18,10 @@ import Notification from 'core/notification';
 
 const POLL_MS = 250;
 const SAVE_MS = 15000;
-const TOLERANCE = 2;          // Seconds of forward movement allowed past the furthest point watched.
-const MAX_RATE = 1.5;         // Largest playback rate the tracker counts as real-time playback.
-const SLACK = 0.75;           // Seconds of allowance for timer jitter.
-const SETTLE = 1;             // Seconds to let a seek back take effect before sending the player back again.
+const TOLERANCE = 2; // Seconds of forward movement allowed past the furthest point watched.
+const MAX_RATE = 1.5; // Largest playback rate the tracker counts as real-time playback.
+const SLACK = 0.75; // Seconds of allowance for timer jitter.
+const SETTLE = 1; // Seconds to let a seek back take effect before sending the player back again.
 
 const BUILD = '0.1.4';
 const loadedScripts = {};
@@ -34,7 +34,6 @@ const loadedScripts = {};
  */
 const debug = (message, data) => {
     if (window.M && window.M.cfg && window.M.cfg.developerdebug) {
-        // eslint-disable-next-line no-console
         window.console.log('[mod_watchcomplete] ' + message, data);
     }
 };
@@ -119,16 +118,16 @@ const loadVimeoApi = () => {
  * @param {HTMLElement} mount The video element or placeholder div.
  * @returns {Promise<Object>}
  */
-const createAdapter = async (cfg, mount) => {
+const createAdapter = async(cfg, mount) => {
     if (cfg.source === 'mp4') {
         return {
-            getTime: async () => mount.currentTime,
-            getDuration: async () => (Number.isFinite(mount.duration) ? mount.duration : 0),
-            isPlaying: async () => !mount.paused && !mount.ended,
-            seek: async (time) => {
+            getTime: async() => mount.currentTime,
+            getDuration: async() => (Number.isFinite(mount.duration) ? mount.duration : 0),
+            isPlaying: async() => !mount.paused && !mount.ended,
+            seek: async(time) => {
                 mount.currentTime = time;
             },
-            play: () => mount.play().catch(() => {}),
+            play: () => mount.play().catch(() => null),
             onChange: (callback) => ['seeking', 'seeked', 'ended'].forEach(
                 (name) => mount.addEventListener(name, callback)
             ),
@@ -154,12 +153,12 @@ const createAdapter = async (cfg, mount) => {
             // When a seek lands on the end, YouTube switches straight to ENDED but getCurrentTime() keeps
             // returning the position from before the seek. Without this the tracker would believe the
             // student was still inside the watched part and never send them back.
-            getTime: async () => (player.getPlayerState() === window.YT.PlayerState.ENDED
+            getTime: async() => (player.getPlayerState() === window.YT.PlayerState.ENDED
                 ? player.getDuration()
                 : player.getCurrentTime()),
-            getDuration: async () => player.getDuration(),
-            isPlaying: async () => player.getPlayerState() === window.YT.PlayerState.PLAYING,
-            seek: async (time, attempt = 0) => {
+            getDuration: async() => player.getDuration(),
+            isPlaying: async() => player.getPlayerState() === window.YT.PlayerState.PLAYING,
+            seek: async(time, attempt = 0) => {
                 const ended = player.getPlayerState() === window.YT.PlayerState.ENDED;
                 if (!ended && attempt === 0) {
                     player.seekTo(time, true);
@@ -182,7 +181,7 @@ const createAdapter = async (cfg, mount) => {
                 player.loadVideoById({videoId: cfg.videoid, startSeconds: time});
                 return 'stop+loadVideoById';
             },
-            play: async () => player.playVideo(),
+            play: async() => player.playVideo(),
             onChange: (callback) => listeners.push(callback),
         };
     }
@@ -193,22 +192,22 @@ const createAdapter = async (cfg, mount) => {
     await vimeo.ready();
     return {
         // Same safeguard as YouTube: once the video has ended, the position is the end.
-        getTime: async () => ((await vimeo.getEnded()) ? vimeo.getDuration() : vimeo.getCurrentTime()),
+        getTime: async() => ((await vimeo.getEnded()) ? vimeo.getDuration() : vimeo.getCurrentTime()),
         getDuration: () => vimeo.getDuration(),
-        isPlaying: async () => !(await vimeo.getPaused()) && !(await vimeo.getEnded()),
-        seek: async (time) => {
+        isPlaying: async() => !(await vimeo.getPaused()) && !(await vimeo.getEnded()),
+        seek: async(time) => {
             const [ended, duration] = await Promise.all([vimeo.getEnded(), vimeo.getDuration()]);
-            // setCurrentTime rejects a time past the end, and watched segments are rounded up to whole
+            // The player's setCurrentTime rejects a time past the end, and watched segments are rounded up to whole
             // seconds, so keep the target inside the video.
             const target = duration > 0 ? Math.min(time, Math.max(0, duration - 0.5)) : time;
             await vimeo.setCurrentTime(Math.max(0, target));
             if (ended) {
                 // Once a video has ended, Vimeo keeps its end screen up and stays paused even after the
                 // position has moved, so resume playback to show the student where they have been sent.
-                await vimeo.play().catch(() => {});
+                await vimeo.play().catch(() => null);
             }
         },
-        play: () => vimeo.play().catch(() => {}),
+        play: () => vimeo.play().catch(() => null),
         onChange: (callback) => ['seeked', 'ended', 'play'].forEach((name) => vimeo.on(name, callback)),
     };
 };
@@ -253,7 +252,7 @@ const mergeSegments = (list) => {
  *
  * @param {Object} cfg
  */
-export const init = async (cfg) => {
+export const init = async(cfg) => {
     const root = document.getElementById('watchcomplete-player');
     const mount = document.getElementById('wc-video');
     const bar = document.getElementById('wc-progress-bar');
@@ -268,8 +267,8 @@ export const init = async (cfg) => {
 
     const state = {
         merged: decode(cfg.segments),
-        pending: [],     // Closed segments not yet confirmed by the server.
-        open: null,      // Segment being played right now.
+        pending: [], // Closed segments not yet confirmed by the server.
+        open: null, // Segment being played right now.
         duration: cfg.duration || 0,
         percent: cfg.percent || 0,
         completed: !!cfg.completed,
@@ -277,7 +276,7 @@ export const init = async (cfg) => {
         lastWall: null,
         wasPlaying: false,
         saving: false,
-        snapUntil: 0,    // While a seek back is in flight, the wall-clock time to wait until before retrying.
+        snapUntil: 0, // While a seek back is in flight, the wall-clock time to wait until before retrying.
         snapAttempts: 0, // Seek backs sent for the current skip, so a method that did not work is not repeated.
     };
 
@@ -317,7 +316,7 @@ export const init = async (cfg) => {
         }
     };
 
-    const save = async () => {
+    const save = async() => {
         if (!cfg.canSubmit || state.saving || state.duration <= 0) {
             return;
         }
@@ -369,18 +368,62 @@ export const init = async (cfg) => {
         }
     };
     if (resumeBox) {
-        document.getElementById('wc-resume-btn').addEventListener('click', async () => {
+        document.getElementById('wc-resume-btn').addEventListener('click', async() => {
             hideResume();
             await player.seek(cfg.position);
             await player.play();
         });
-        document.getElementById('wc-restart-btn').addEventListener('click', async () => {
+        document.getElementById('wc-restart-btn').addEventListener('click', async() => {
             hideResume();
             await player.seek(0);
         });
     }
 
-    const tick = async () => {
+    // Anti-skipping: if the player has moved beyond what has been watched, return to the furthest point.
+    // Resolves true when the sample was a skip, so the caller must not count it.
+    const blockSkip = async(time, wall) => {
+        if (!cfg.preventskipping) {
+            return false;
+        }
+        const limit = reach();
+        if (time > limit + TOLERANCE) {
+            // An embedded player can go on reporting the old position for a moment after being sent
+            // back. Seeking it again during that time restarts the seek (on YouTube, reloading an ended
+            // video over and over), so wait for the first one to land.
+            if (wall < state.snapUntil) {
+                return true;
+            }
+            closeOpen();
+            state.snapUntil = wall + SETTLE;
+            // Each retry for the same skip tells the adapter that the previous method did not work.
+            const attempt = state.snapAttempts++;
+            try {
+                const method = await player.seek(limit, attempt);
+                debug('skip blocked', {at: time, backTo: limit, attempt, method: method || 'seek'});
+            } catch (error) {
+                debug('seek back failed, will retry', {at: time, backTo: limit, attempt, error: String(error)});
+            }
+            if (notice && !notice.dataset.shown) {
+                notice.textContent = cfg.skipMessage;
+                notice.dataset.shown = '1';
+                setTimeout(() => {
+                    notice.textContent = '';
+                    delete notice.dataset.shown;
+                }, 5000);
+            }
+            state.lastTime = limit;
+            state.lastWall = performance.now() / 1000;
+            return true;
+        }
+        if (state.snapAttempts) {
+            debug('back within watched range', {at: time, attempts: state.snapAttempts});
+        }
+        state.snapUntil = 0;
+        state.snapAttempts = 0;
+        return false;
+    };
+
+    const tick = async() => {
         if (!cfg.canSubmit) {
             return;
         }
@@ -398,43 +441,8 @@ export const init = async (cfg) => {
             }
         }
 
-        // Anti-skipping: if the player has moved beyond what has been watched, return to the furthest point.
-        if (cfg.preventskipping) {
-            const limit = reach();
-            if (time > limit + TOLERANCE) {
-                // An embedded player can go on reporting the old position for a moment after being sent
-                // back. Seeking it again during that time restarts the seek (on YouTube, reloading an ended
-                // video over and over), so wait for the first one to land.
-                if (wall < state.snapUntil) {
-                    return;
-                }
-                closeOpen();
-                state.snapUntil = wall + SETTLE;
-                // Each retry for the same skip tells the adapter that the previous method did not work.
-                const attempt = state.snapAttempts++;
-                try {
-                    const method = await player.seek(limit, attempt);
-                    debug('skip blocked', {at: time, backTo: limit, attempt, method: method || 'seek'});
-                } catch (error) {
-                    debug('seek back failed, will retry', {at: time, backTo: limit, attempt, error: String(error)});
-                }
-                if (notice && !notice.dataset.shown) {
-                    notice.textContent = cfg.skipMessage;
-                    notice.dataset.shown = '1';
-                    setTimeout(() => {
-                        notice.textContent = '';
-                        delete notice.dataset.shown;
-                    }, 5000);
-                }
-                state.lastTime = limit;
-                state.lastWall = performance.now() / 1000;
-                return;
-            }
-            if (state.snapAttempts) {
-                debug('back within watched range', {at: time, attempts: state.snapAttempts});
-            }
-            state.snapUntil = 0;
-            state.snapAttempts = 0;
+        if (await blockSkip(time, wall)) {
+            return;
         }
 
         const prevTime = state.lastTime;
@@ -484,7 +492,7 @@ export const init = async (cfg) => {
             return;
         }
         ticking = true;
-        tick().catch(() => {}).finally(() => {
+        tick().catch(() => null).finally(() => {
             ticking = false;
         });
     };

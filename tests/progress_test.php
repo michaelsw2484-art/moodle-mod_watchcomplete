@@ -23,7 +23,10 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace mod_watchcomplete\local;
+namespace mod_watchcomplete;
+
+use mod_watchcomplete\local\progress;
+use mod_watchcomplete\local\video;
 
 /**
  * Tests for the progress and video classes.

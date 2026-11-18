@@ -54,7 +54,7 @@
 
 /* Fallback for themes that do not provide .visually-hidden. */
 .watchcomplete-player .visually-hidden {
-    position: absolute !important;
+    position: absolute;
     width: 1px;
     height: 1px;
     overflow: hidden;

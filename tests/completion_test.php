@@ -22,7 +22,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace mod_watchcomplete\completion;
+namespace mod_watchcomplete;
+
+use mod_watchcomplete\completion\custom_completion;
 
 /**
  * Tests that the rule reports completion only once the threshold has been reached.
