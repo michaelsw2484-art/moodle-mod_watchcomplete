@@ -25,8 +25,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_watchcomplete';
-$plugin->version   = 2026110909;
+$plugin->version   = 2026111802;
 $plugin->requires  = 2024100700; // Moodle 4.5 LTS.
 $plugin->supported = [405, 503]; // Moodle 4.5 to 5.3.
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.1';
+$plugin->release   = '0.1.4';

@@ -87,7 +87,7 @@ Run on each target Moodle version:
 ## Known limitations
 
 - **Attention is not proven.** Browser tracking shows that the video played and which sections played. It cannot show that a person was watching. The UI says so.
-- **Embedded players.** YouTube and Vimeo do not expose everything a native player does. Scrubbing forward with prevent skipping on is reversed on the next sample, a fraction of a second later.
+- **Embedded players.** YouTube and Vimeo do not expose everything a native player does. Scrubbing forward with prevent skipping on is reversed as soon as the player reports the seek, or on the next sample a fraction of a second later. Jumping to the very end is reversed too: the player returns to the furthest point watched and carries on playing from there, so the end screen does not stay up.
 - **Duration.** Accuracy depends on the teacher's value or the first player report. A wrong value is corrected by editing the activity.
 - **Client-side data.** A determined student could send falsified segments. Server checks limit this to whole-second segments inside the video length, forward jumps when prevent skipping is on, and a segment cap. They do not stop a student who plays the video at a fast rate on a second device.
 - **Not included:** grading, group filtering in the report, and translations other than English.
