@@ -1,0 +1,58 @@
+# Rebuilds amd/build from amd/src with Moodle's own grunt setup, then commits the result.
+# Run it from the repository's Actions tab: "Rebuild AMD" > "Run workflow".
+name: Rebuild AMD
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out plugin
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - name: Check out Moodle
+        uses: actions/checkout@v4
+        with:
+          repository: moodle/moodle
+          ref: MOODLE_405_STABLE
+          path: moodle
+          fetch-depth: 1
+
+      - name: Set up Node (version from Moodle's .nvmrc)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: moodle/.nvmrc
+
+      - name: Install Moodle's build tools
+        working-directory: moodle
+        run: npm ci
+
+      - name: Build
+        working-directory: moodle
+        run: |
+          mkdir -p mod/watchcomplete
+          cp -r ../plugin/. mod/watchcomplete/
+          npx grunt amd --root=mod/watchcomplete
+          rm -rf ../plugin/amd/build
+          cp -r mod/watchcomplete/amd/build ../plugin/amd/build
+
+      - name: Commit rebuilt files
+        working-directory: plugin
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add amd/build
+          if git diff --cached --quiet; then
+            echo "amd/build is already up to date."
+          else
+            git commit -m "Rebuild AMD modules with grunt"
+            git push
+          fi
